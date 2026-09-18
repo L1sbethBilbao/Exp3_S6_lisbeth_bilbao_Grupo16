@@ -10,14 +10,13 @@
         <relativePath/>
     </parent>
     <groupId>cl.duoc.pby2203</groupId>
-    <artifactId>banco-xyz-bff-cajero</artifactId>
+    <artifactId>banco-xyz-config-server</artifactId>
     <version>1.0.0</version>
-    <name>banco-xyz-bff-cajero</name>
-    <description>BFF Cajero Banco XYZ - Semana 6: Config, Eureka, Resilience4j, Security.</description>
+    <name>banco-xyz-config-server</name>
+    <description>Semana 6 - Config Server centralizado (perfil native).</description>
     <properties>
         <java.version>17</java.version>
         <spring-cloud.version>2023.0.3</spring-cloud.version>
-        <resilience4j.version>2.1.0</resilience4j.version>
     </properties>
     <dependencies>
         <dependency>
@@ -25,38 +24,8 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-config</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.github.resilience4j</groupId>
-            <artifactId>resilience4j-spring-boot3</artifactId>
-            <version>${resilience4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <artifactId>spring-cloud-config-server</artifactId>
         </dependency>
     </dependencies>
     <dependencyManagement>

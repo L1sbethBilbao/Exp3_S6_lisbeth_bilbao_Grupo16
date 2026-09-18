@@ -1,0 +1,303 @@
+================================================================================
+GUIA DE CAPTURAS - SEMANA 6 (PBY2203)
+Exp3_S6_lisbeth_bilbao_Grupo_16 - Banco XYZ Spring Cloud
+================================================================================
+
+Objetivo: evidencias para la pauta de evaluacion (maximo puntaje).
+Herramienta principal: POSTMAN (como mostro el profesor en clase).
+Tambien: navegador (Eureka / Config) y terminal (arranque de servicios).
+
+ANTES DE CAPTURAR
+-----------------
+1. Arranca los servicios en este orden (cada uno en su terminal):
+   1) config-server
+   2) discovery-server
+   3) auth-server
+   4) ms-cuentas
+   5) bff-web
+   6) bff-movil
+   7) bff-cajero
+
+2. En Postman:
+   - Crea una Collection "BancoXYZ_S6"
+   - Para HTTPS no aplica: esta semana los BFF quedan en HTTP (facilita Postman)
+   - Auth Type = Basic Auth cuando se indique
+   - Para OAuth2 usa la pestana Authorization -> OAuth 2.0 o una request POST al token
+
+Orden sugerido de capturas (IMG-01 a IMG-16).
+Guarda las imagenes en una carpeta "evidencias_semana_6" dentro del zip de entrega.
+
+
+================================================================================
+CRITERIO 1 - CONFIG SERVER
+================================================================================
+
+IMG-01 | Arranque Config Server
+-------------------------------
+Donde sacar la imagen:
+  Terminal donde corriste: cd config-server -> mvn spring-boot:run
+Que debe verse:
+  Log con "Started ConfigServerApplication" y puerto 8888.
+Texto sugerido bajo la captura:
+  "Config Server levantado correctamente en el puerto 8888. Actua como
+   intermediario de configuracion (perfil native) sin logica de negocio."
+
+
+IMG-02 | Config de ms-cuentas desde el Config Server (navegador o Postman)
+-------------------------------------------------------------------------
+Donde sacar la imagen:
+  Postman o navegador:
+  GET http://localhost:8888/ms-cuentas/default
+Que debe verse:
+  JSON/YAML con propiedades (puerto 8090, eureka, bancoxyz.mensaje, etc.).
+Texto sugerido:
+  "El Config Server expone la configuracion centralizada de ms-cuentas.
+   El microservicio la consume al arrancar mediante spring.config.import."
+
+
+IMG-03 | Prueba de que el MS cargo la config (mensaje desde Config Server)
+-------------------------------------------------------------------------
+Donde sacar la imagen:
+  Postman:
+  GET http://localhost:8090/api/publico/info
+  (sin autenticacion)
+Que debe verse:
+  JSON con configDesdeConfigServer = "Config cargada desde Config Server..."
+  y ambiente = cloud-s6
+Texto sugerido:
+  "ms-cuentas consume el Config Server: el mensaje y el ambiente no estan
+   hardcodeados en el codigo, vienen del repositorio de configuracion."
+
+
+================================================================================
+CRITERIO 2 - SERVICE DISCOVERY (EUREKA) + INTEGRACION
+================================================================================
+
+IMG-04 | Arranque Eureka
+------------------------
+Donde sacar la imagen:
+  Terminal discovery-server -> Started DiscoveryServerApplication, puerto 8761
+Texto sugerido:
+  "Discovery Server (Eureka) iniciado en el puerto 8761. No ejecuta negocio;
+   solo registra y permite descubrir microservicios."
+
+
+IMG-05 | Dashboard Eureka con al menos 3 microservicios
+-------------------------------------------------------
+Donde sacar la imagen:
+  Navegador: http://localhost:8761
+Que debe verse (Instances currently registered with Eureka):
+  MS-CUENTAS, BFF-WEB, BFF-MOVIL (y opcionalmente BFF-CAJERO)
+Texto sugerido:
+  "Tres o mas microservicios registrados en Eureka, cumpliendo el criterio
+   de Service Discovery de la pauta. Ya no se dependen de URLs fijas."
+
+
+IMG-06 | Integracion por nombre logico (BFF Web -> MS-CUENTAS)
+-------------------------------------------------------------
+Donde sacar la imagen:
+  Postman:
+  GET http://localhost:8091/bff/web/cuentas
+  Authorization: Basic Auth
+    Username: web
+    Password: web123
+Que debe verse:
+  Status 200 y lista de cuentas (payload rico del canal web).
+Texto sugerido:
+  "El BFF Web obtiene datos del core llamando por nombre Eureka
+   http://MS-CUENTAS/core/... con RestTemplate @LoadBalanced,
+   no con localhost:8090 hardcodeado."
+
+
+IMG-07 | BFF Movil (segundo canal registrado e integrado)
+---------------------------------------------------------
+Donde sacar la imagen:
+  Postman:
+  GET http://localhost:8092/bff/movil/cuentas
+  Basic Auth: movil / movil123
+Que debe verse:
+  Status 200, respuesta liviana (sin edad/descripcion completa).
+Texto sugerido:
+  "BFF Movil registrado en Eureka e integrado al mismo core, con payload
+   optimizado para el canal movil."
+
+
+================================================================================
+CRITERIO 3 - TOLERANCIA A FALLOS (3 MICROSERVICIOS) + AUTH
+================================================================================
+
+IMG-08 | Health / CircuitBreaker del BFF Web (Resilience4j activo)
+------------------------------------------------------------------
+Donde sacar la imagen:
+  Postman o navegador:
+  GET http://localhost:8091/actuator/health
+  (sin auth; actuator esta publico)
+Que debe verse:
+  status UP y seccion circuitBreakers (si show-details=always).
+Texto sugerido:
+  "Resilience4j habilitado en el consumidor (BFF Web). El Circuit Breaker
+   protege las llamadas salientes hacia ms-cuentas."
+
+
+IMG-09 | Fallback cuando ms-cuentas no esta disponible
+------------------------------------------------------
+Pasos:
+  1) Detener la terminal de ms-cuentas (Ctrl+C)
+  2) En Postman llamar varias veces:
+     GET http://localhost:8091/bff/web/cuentas
+     Basic Auth web/web123
+Donde sacar la imagen:
+  Respuesta Postman (lista vacia por fallback) y/o log del BFF con "FALLBACK"
+Texto sugerido:
+  "Con ms-cuentas caido, el BFF Web no propaga el fallo en cascada: activa
+   Fallback de Resilience4j (lista vacia / mensaje controlado) tras Retry."
+
+
+IMG-10 | Misma prueba de resiliencia en BFF Movil
+-------------------------------------------------
+Donde sacar la imagen:
+  Con ms-cuentas aun detenido:
+  GET http://localhost:8092/bff/movil/cuentas
+  Basic Auth movil/movil123
+Texto sugerido:
+  "El segundo microservicio consumidor (BFF Movil) tambien aplica
+   CircuitBreaker + Retry + Fallback frente a la caida del core."
+
+
+IMG-11 | Misma prueba de resiliencia en BFF Cajero
+--------------------------------------------------
+Donde sacar la imagen:
+  Con ms-cuentas detenido:
+  GET http://localhost:8093/bff/cajero/saldo/101
+  Basic Auth cajero/cajero123
+Que puede verse:
+  Error controlado / mensaje de servicio no disponible (fallback).
+Texto sugerido:
+  "El tercer microservicio (BFF Cajero) tambien tiene tolerancia a fallos.
+   Asi se cubre el criterio de 3 microservicios con Resilience4j."
+
+IMPORTANTE despues de IMG-11:
+  Vuelve a levantar ms-cuentas antes de las capturas de seguridad.
+
+
+================================================================================
+CRITERIO 4 - AUTENTICACION Y AUTORIZACION
+================================================================================
+
+IMG-12 | 401 sin credenciales (como en la clase / guia)
+-------------------------------------------------------
+Donde sacar la imagen:
+  Postman:
+  GET http://localhost:8091/bff/web/cuentas
+  SIN Authorization (quita Basic Auth)
+Que debe verse:
+  Status 401 Unauthorized
+Texto sugerido:
+  "Sin credenciales el BFF Web rechaza la peticion con HTTP 401,
+   igual al ejemplo de seguridad mostrado en clase con Postman."
+
+
+IMG-13 | 200 con HTTP Basic correcto (autenticacion)
+----------------------------------------------------
+Donde sacar la imagen:
+  Postman:
+  GET http://localhost:8091/bff/web/cuentas
+  Auth Type: Basic Auth -> web / web123
+Que debe verse:
+  Status 200 + JSON de cuentas
+Texto sugerido:
+  "Con usuario y password validos (HTTP Basic) el acceso es autorizado.
+   Credenciales y rol WEB vienen de la configuracion del canal."
+
+
+IMG-14 | Autorizacion por rol en ms-cuentas (admin)
+---------------------------------------------------
+Donde sacar la imagen A (falla):
+  GET http://localhost:8090/api/basic/admin/cuentas
+  Basic Auth: user / password123
+  -> debe dar 403 Forbidden
+Donde sacar la imagen B (ok):
+  Misma URL con Basic Auth: admin / admin123
+  -> 200 con resumen
+Texto sugerido:
+  "Ademas de autenticar, el sistema autoriza por rol: USER no accede a
+   /api/basic/admin/**; ADMIN si. Cumple autenticacion y autorizacion."
+
+
+IMG-15 | OAuth2 client_credentials + JWT (como ejemplo del profesor)
+--------------------------------------------------------------------
+Paso 1 - obtener token (Postman):
+  POST http://localhost:9000/oauth2/token
+  Authorization: Basic Auth
+    Username: bancoxyz-bff-client
+    Password: secret123
+  Body -> x-www-form-urlencoded:
+    grant_type = client_credentials
+    scope      = cuentas.read
+Que debe verse:
+  access_token (JWT), token_type bearer
+
+Paso 2 - usar el token:
+  GET http://localhost:8090/api/oauth2/cuentas
+  Authorization: Bearer Token -> pega el access_token
+Que debe verse:
+  200 con cuentas + subject/scope del JWT
+
+Captura sugerida: una del token y otra del GET con Bearer.
+Texto sugerido:
+  "Flujo OAuth2 client_credentials (maquina a maquina): el auth-server
+   emite JWT y ms-cuentas (Resource Server) valida el token y el scope
+   cuentas.read, tal como en el ejemplo de clase."
+
+
+IMG-16 | 401 OAuth2 sin token
+-----------------------------
+Donde sacar la imagen:
+  GET http://localhost:8090/api/oauth2/cuentas
+  sin Bearer token
+Que debe verse:
+  401 Unauthorized
+Texto sugerido:
+  "El endpoint OAuth2 queda protegido: sin JWT valido no hay acceso."
+
+
+================================================================================
+CAPTURAS EXTRA (recomendadas para el README / zip)
+================================================================================
+
+IMG-17 | Arranque de ms-cuentas registrado en Eureka
+  Terminal ms-cuentas: "Started MsCuentasApplication" + log de registro Eureka.
+
+IMG-18 | Retiro cajero exitoso (negocio + auth)
+  POST http://localhost:8093/bff/cajero/cuentas/101/retiro
+  Basic Auth cajero/cajero123
+  Body raw JSON: {"monto":100}
+  Texto: "Operacion de retiro del canal cajero autenticada con HTTP Basic."
+
+
+================================================================================
+CHECKLIST RAPIDO ANTES DE ENTREGAR
+================================================================================
+[ ] Config Server :8888 arriba
+[ ] Eureka :8761 con >= 3 instancias
+[ ] ms-cuentas + 3 BFF arriba
+[ ] auth-server :9000 arriba (para OAuth2)
+[ ] Capturas IMG-01 a IMG-16 (o al menos una por criterio)
+[ ] README.md actualizado en el repo
+[ ] Codigo pusheado a GitHub
+[ ] Carpeta comprimida para AVA con codigo + evidencias + este guia (opcional)
+
+================================================================================
+CREDENCIALES RESUMEN (Postman)
+================================================================================
+BFF Web:     web    / web123
+BFF Movil:   movil  / movil123
+BFF Cajero:  cajero / cajero123
+Basic USER:  user   / password123
+Basic ADMIN: admin  / admin123
+OAuth2:      client bancoxyz-bff-client / secret123
+             grant_type=client_credentials  scope=cuentas.read
+
+================================================================================
+Fin de la guia
+================================================================================

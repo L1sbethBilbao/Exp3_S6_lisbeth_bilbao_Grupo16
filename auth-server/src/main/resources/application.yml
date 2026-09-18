@@ -1,0 +1,26 @@
+server:
+  port: 9000
+
+spring:
+  application:
+    name: auth-server
+  security:
+    oauth2:
+      authorizationserver:
+        client:
+          bancoxyz-bff-client:
+            registration:
+              client-id: bancoxyz-bff-client
+              client-secret: "{noop}secret123"
+              client-authentication-methods:
+                - client_secret_basic
+              authorization-grant-types:
+                - client_credentials
+              scopes:
+                - cuentas.read
+                - cuentas.write
+            require-authorization-consent: false
+
+logging:
+  level:
+    org.springframework.security: INFO

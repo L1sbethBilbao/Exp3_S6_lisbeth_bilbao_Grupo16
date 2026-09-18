@@ -1,0 +1,65 @@
+# Config centralizada BFF Movil
+server:
+  port: 8092
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+  instance:
+    prefer-ip-address: true
+
+ms-cuentas:
+  service-id: MS-CUENTAS
+
+backend:
+  connect-timeout-ms: 2000
+  read-timeout-ms: 3000
+
+bancoxyz:
+  auth:
+    canal: MOVIL
+  security:
+    username: movil
+    password: movil123
+    role: MOVIL
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      msCuentas:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        minimumNumberOfCalls: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+  retry:
+    instances:
+      msCuentas:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+  timelimiter:
+    instances:
+      msCuentas:
+        timeoutDuration: 3s
+        cancelRunningFuture: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers,metrics
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+
+logging:
+  level:
+    cl.duoc.bancoxyz.bff: INFO
+    io.github.resilience4j: INFO

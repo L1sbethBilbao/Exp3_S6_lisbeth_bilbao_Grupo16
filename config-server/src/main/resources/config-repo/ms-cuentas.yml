@@ -1,0 +1,24 @@
+# Config centralizada para ms-cuentas (spring.application.name = ms-cuentas)
+server:
+  port: 8090
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+  instance:
+    prefer-ip-address: true
+
+bancoxyz:
+  mensaje: "Config cargada desde Config Server - ms-cuentas Semana 6"
+  ambiente: cloud-s6
+
+spring:
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+
+logging:
+  level:
+    cl.duoc.bancoxyz.ms: INFO
