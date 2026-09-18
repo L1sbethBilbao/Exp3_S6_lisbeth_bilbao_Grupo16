@@ -8,7 +8,9 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
@@ -64,10 +66,14 @@ public class MsCuentasClient {
     @Retry(name = "msCuentas")
     public CuentaCoreDTO retirar(Long cuentaId, BigDecimal monto) {
         try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, BigDecimal>> entity =
+                    new HttpEntity<>(Map.of("monto", monto), headers);
             ResponseEntity<CuentaCoreDTO> response = restTemplate.exchange(
                     base() + "/core/cuentas/{id}/retiro",
                     HttpMethod.POST,
-                    new HttpEntity<>(Map.of("monto", monto)),
+                    entity,
                     CuentaCoreDTO.class,
                     cuentaId);
             return response.getBody();
